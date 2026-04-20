@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  trader:
+    build: .
+    container_name: crypto_trader
+    restart: unless-stopped
+    
+    environment:
+      - TRADER_MODE=paper
+      - TRADER_LOG_LEVEL=INFO
+      - TZ=Asia/Shanghai
+    
+    volumes:
+      # 挂载配置
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./.env:/app/.env
+      # 挂载源代码热更新
+      - ./src:/app/src
+      - ./main.py:/app/main.py
+    
+    networks:
+      - trader_network
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 512M
+
+networks:
+  trader_network:
+    driver: bridge

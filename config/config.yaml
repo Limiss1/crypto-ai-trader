@@ -1,0 +1,31 @@
+mode: "live"
+symbols:
+  - BTC/USDT:USDT
+  - ETH/USDT:USDT
+base_currency: "USDT"
+
+exchange:
+  name: "binance"
+  testnet: true
+  leverage: 10
+  api_key: null
+  api_secret: null
+
+strategy:
+  name: "ai"
+  confidence_threshold: 0.50
+  max_position_size: 0.1
+  lookback_period: 1500
+
+risk:
+  max_drawdown: 0.15
+  daily_loss_limit: 0.05
+  max_open_positions: 3
+  stop_loss_pct: 0.0015
+  take_profit_pct: 0.003
+
+data:
+  cache_dir: "~/.crypto_trader/cache"
+  historical_days: 30
+  update_interval: 60
+  save_raw_data: false

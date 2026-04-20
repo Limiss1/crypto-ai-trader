@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto AI Trader</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2235;
+            --bg-input: #0f1729;
+            --border: #2a3a52;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --green: #10b981;
+            --green-bg: rgba(16, 185, 129, 0.1);
+            --red: #ef4444;
+            --red-bg: rgba(239, 68, 68, 0.1);
+            --yellow: #f59e0b;
+            --yellow-bg: rgba(245, 158, 11, 0.1);
+            --purple: #8b5cf6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.running {
+            background: var(--green-bg);
+            color: var(--green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-badge.stopped {
+            background: var(--red-bg);
+            color: var(--red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .status-badge.running .status-dot {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 0;
+            height: calc(100vh - 53px);
+        }
+
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .content {
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .content::-webkit-scrollbar { width: 6px; }
+        .content::-webkit-scrollbar-track { background: transparent; }
+        .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-title .icon {
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-1px);
+        }
+
+        .btn-start:disabled {
+            background: #374151;
+            color: #6b7280;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-1px);
+        }
+
+        .btn-stop:disabled {
+            background: #374151;
+            color: #6b7280;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .stat-sub {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .stat-value.positive { color: var(--green); }
+        .stat-value.negative { color: var(--red); }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .panel-body {
+            padding: 16px;
+        }
+
+        .dual-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .positions-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .positions-table th {
+            text-align: left;
+            padding: 8px 10px;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .positions-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(42, 58, 82, 0.5);
+        }
+
+        .side-long {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .side-short {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        .prediction-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .prediction-symbol-group {
+            margin-bottom: 8px;
+        }
+
+        .prediction-symbol-title {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .prediction-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 70px 70px;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: var(--bg-input);
+            font-size: 12px;
+        }
+
+        .prediction-tf {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .prediction-bar-wrap {
+            height: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .prediction-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+
+        .prediction-bar.buy { background: var(--green); }
+        .prediction-bar.sell { background: var(--red); }
+        .prediction-bar.hold { background: var(--yellow); }
+
+        .prediction-direction {
+            font-weight: 700;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .prediction-direction.buy { color: var(--green); }
+        .prediction-direction.sell { color: var(--red); }
+        .prediction-direction.hold { color: var(--yellow); }
+
+        .prediction-confidence {
+            text-align: right;
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+
+        .log-container {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .log-container::-webkit-scrollbar { width: 4px; }
+        .log-container::-webkit-scrollbar-track { background: transparent; }
+        .log-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .log-line { white-space: pre-wrap; word-break: break-all; }
+        .log-line .time { color: var(--text-muted); }
+        .log-line .level-info { color: var(--accent); }
+        .log-line .level-warning { color: var(--yellow); }
+        .log-line .level-error { color: var(--red); }
+
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .mode-toggle button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-toggle button.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+        .empty-state p { font-size: 14px; }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .tag-green { background: var(--green-bg); color: var(--green); }
+        .tag-red { background: var(--red-bg); color: var(--red); }
+        .tag-yellow { background: var(--yellow-bg); color: var(--yellow); }
+        .tag-blue { background: rgba(59, 130, 246, 0.1); color: var(--accent); }
+
+        .confidence-bar {
+            height: 4px;
+            background: var(--bg-input);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 16px 0;
+        }
+
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                max-height: 50vh;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .dual-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <span class="logo">⚡ Crypto AI Trader</span>
+            <span class="status-badge stopped" id="globalStatus">
+                <span class="status-dot"></span>
+                <span id="globalStatusText">未启动</span>
+            </span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);" id="clockDisplay"></div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="section">
+                <div class="section-title"><span class="icon">🎯</span> 交易模式</div>
+                <div class="mode-toggle" id="modeToggle">
+                    <button class="active" data-mode="paper" onclick="setMode('paper')">模拟盘</button>
+                    <button data-mode="live" onclick="setMode('live')">实盘</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title"><span class="icon">💱</span> 交易所配置</div>
+                <div class="form-group">
+                    <label>交易所</label>
+                    <select id="exchangeName">
+                        <option value="binance">Binance</option>
+                        <option value="okx">OKX</option>
+                        <option value="coinbase">Coinbase</option>
+                        <option value="kraken">Kraken</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>API Key</label>
+                        <input type="text" id="apiKey" placeholder="输入API Key">
+                    </div>
+                    <div class="form-group">
+                        <label>API Secret</label>
+                        <input type="password" id="apiSecret" placeholder="输入API Secret">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>杠杆倍数</label>
+                        <select id="leverage">
+                            <option value="1">1x</option>
+                            <option value="3">3x</option>
+                            <option value="5">5x</option>
+                            <option value="10" selected>10x</option>
+                            <option value="20">20x</option>
+                            <option value="50">50x</option>
+                            <option value="75">75x</option>
+                            <option value="100">100x</option>
+                            <option value="125">125x</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>使用测试网</label>
+                        <select id="testnet">
+                            <option value="true">是</option>
+                            <option value="false">否</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>代理地址 (可选)</label>
+                    <input type="text" id="proxy" placeholder="http://127.0.0.1:7890">
+                </div>
+                <div class="form-group">
+                    <label>Demo API地址 (可选)</label>
+                    <input type="text" id="demoApi" placeholder="https://demo-fapi.binance.com">
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="section">
+                <div class="section-title"><span class="icon">📊</span> 交易对配置</div>
+                <div class="form-group">
+                    <label>交易对 (逗号分隔)</label>
+                    <input type="text" id="symbols" value="BTC/USDT:USDT,ETH/USDT:USDT" placeholder="BTC/USDT:USDT,ETH/USDT:USDT">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>基础货币</label>
+                        <select id="baseCurrency">
+                            <option value="USDT" selected>USDT</option>
+                            <option value="BUSD">BUSD</option>
+                            <option value="BTC">BTC</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="initialBalanceGroup">
+                        <label>初始余额 (USDT)</label>
+                        <input type="number" id="initialBalance" value="10000" min="100" step="100">
+                    </div>
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="section">
+                <div class="section-title"><span class="icon">🧠</span> 策略配置</div>
+                <div class="form-group">
+                    <label>策略名称</label>
+                    <select id="strategyName">
+                        <option value="ai" selected>AI (XGBoost)</option>
+                        <option value="dummy">Dummy (测试)</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>置信度阈值</label>
+                        <input type="number" id="confidenceThreshold" value="0.50" min="0" max="1" step="0.05">
+                    </div>
+                    <div class="form-group">
+                        <label>最大仓位比例</label>
+                        <input type="number" id="maxPositionSize" value="0.1" min="0.01" max="1" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>回看K线数量</label>
+                    <input type="number" id="lookbackPeriod" value="1500" min="50" max="5000" step="50">
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="section">
+                <div class="section-title"><span class="icon">🛡️</span> 风控配置</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>最大回撤</label>
+                        <input type="number" id="maxDrawdown" value="0.15" min="0.01" max="1" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>每日亏损限制</label>
+                        <input type="number" id="dailyLossLimit" value="0.05" min="0.01" max="1" step="0.01">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>最大持仓数</label>
+                        <input type="number" id="maxOpenPositions" value="3" min="1" max="20">
+                    </div>
+                    <div class="form-group">
+                        <label>止损百分比</label>
+                        <input type="number" id="stopLossPct" value="0.0015" min="0.0001" max="0.1" step="0.0001">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>止盈百分比</label>
+                    <input type="number" id="takeProfitPct" value="0.003" min="0.0001" max="0.1" step="0.0001">
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="section">
+                <div class="section-title"><span class="icon">💾</span> 数据配置</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>历史数据天数</label>
+                        <input type="number" id="historicalDays" value="30" min="1" max="365">
+                    </div>
+                    <div class="form-group">
+                        <label>更新间隔(秒)</label>
+                        <input type="number" id="updateInterval" value="60" min="5" max="600">
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-start" id="btnStart" onclick="startTrading()">▶ 启动交易</button>
+                <button class="btn btn-stop" id="btnStop" onclick="stopTrading()" disabled>■ 停止交易</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">权益 (USDT)</div>
+                    <div class="stat-value" id="statEquity">0.00</div>
+                    <div class="stat-sub" id="statEquitySub"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">总盈亏</div>
+                    <div class="stat-value" id="statPnl">0.00</div>
+                    <div class="stat-sub" id="statPnlSub"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">交易次数</div>
+                    <div class="stat-value" id="statTrades">0</div>
+                    <div class="stat-sub" id="statTradesSub"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">胜率</div>
+                    <div class="stat-value" id="statWinRate">0%</div>
+                    <div class="stat-sub" id="statWinRateSub"></div>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-card">
+                    <div class="stat-label">置信度阈值</div>
+                    <div class="stat-value" id="statConfidence">0%</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill" style="width:0%;background:var(--accent);"></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">风险等级</div>
+                    <div class="stat-value" id="statRiskLevel">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">持仓数</div>
+                    <div class="stat-value" id="statPositionCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">信号数</div>
+                    <div class="stat-value" id="statSignalCount">0</div>
+                </div>
+            </div>
+
+            <div class="dual-panel">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>📍 当前持仓</span>
+                        <span class="tag tag-blue" id="positionCountTag">0 个持仓</span>
+                    </div>
+                    <div class="panel-body" id="positionsBody">
+                        <div class="empty-state">
+                            <div class="icon">📭</div>
+                            <p>暂无持仓，启动交易后将显示持仓信息</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>🔮 模型预测</span>
+                        <span style="display:flex;align-items:center;gap:8px;">
+                            <span class="tag" id="modelStatusTag" style="background:var(--red-bg);color:var(--red);">模型未加载</span>
+                            <span style="font-size:11px;color:var(--text-muted);" id="predUpdateTime">每30秒刷新</span>
+                        </span>
+                    </div>
+                    <div class="panel-body" id="predictionsBody">
+                        <div class="empty-state">
+                            <div class="icon">🔮</div>
+                            <p>启动交易后，模型将预测各时间框架涨跌</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span>📋 交易日志</span>
+                    <span style="font-size:11px;color:var(--text-muted);">实时更新</span>
+                </div>
+                <div class="panel-body">
+                    <div class="log-container" id="logContainer">
+                        <div class="empty-state" style="padding:20px;">
+                            <p>等待交易引擎启动...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'paper';
+        let ws = null;
+        let isRunning = false;
+        let reconnectTimer = null;
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('#modeToggle button').forEach(b => {
+                b.classList.toggle('active', b.dataset.mode === mode);
+            });
+            const balanceGroup = document.getElementById('initialBalanceGroup');
+            balanceGroup.style.display = mode === 'paper' ? 'block' : 'none';
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clockDisplay').textContent =
+                now.toLocaleString('zh-CN', { hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function getFormData() {
+            return {
+                mode: currentMode,
+                symbols: document.getElementById('symbols').value.split(',').map(s => s.trim()).filter(Boolean),
+                base_currency: document.getElementById('baseCurrency').value,
+                initial_balance: parseFloat(document.getElementById('initialBalance').value) || 10000,
+                exchange: {
+                    name: document.getElementById('exchangeName').value,
+                    api_key: document.getElementById('apiKey').value || null,
+                    api_secret: document.getElementById('apiSecret').value || null,
+                    testnet: document.getElementById('testnet').value === 'true',
+                    demo_api: document.getElementById('demoApi').value || null,
+                    proxy: document.getElementById('proxy').value || null,
+                    leverage: parseInt(document.getElementById('leverage').value),
+                },
+                strategy: {
+                    name: document.getElementById('strategyName').value,
+                    confidence_threshold: parseFloat(document.getElementById('confidenceThreshold').value),
+                    max_position_size: parseFloat(document.getElementById('maxPositionSize').value),
+                    lookback_period: parseInt(document.getElementById('lookbackPeriod').value),
+                },
+                risk: {
+                    max_drawdown: parseFloat(document.getElementById('maxDrawdown').value),
+                    daily_loss_limit: parseFloat(document.getElementById('dailyLossLimit').value),
+                    max_open_positions: parseInt(document.getElementById('maxOpenPositions').value),
+                    stop_loss_pct: parseFloat(document.getElementById('stopLossPct').value),
+                    take_profit_pct: parseFloat(document.getElementById('takeProfitPct').value),
+                },
+                data: {
+                    cache_dir: '~/.crypto_trader/cache',
+                    historical_days: parseInt(document.getElementById('historicalDays').value),
+                    update_interval: parseInt(document.getElementById('updateInterval').value),
+                    save_raw_data: false,
+                }
+            };
+        }
+
+        async function startTrading() {
+            const data = getFormData();
+            if (data.symbols.length === 0) {
+                alert('请输入至少一个交易对');
+                return;
+            }
+            if (currentMode === 'live') {
+                if (!confirm('⚠️ 您正在启动实盘交易！这将使用真实资金。确认继续？')) {
+                    return;
+                }
+            }
+            try {
+                document.getElementById('btnStart').disabled = true;
+                document.getElementById('btnStart').textContent = '⏳ 启动中...';
+                const resp = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await resp.json();
+                if (!resp.ok) {
+                    alert('启动失败: ' + (result.detail || JSON.stringify(result)));
+                    document.getElementById('btnStart').disabled = false;
+                    document.getElementById('btnStart').textContent = '▶ 启动交易';
+                    return;
+                }
+                setRunningState(true);
+                updateModelStatus();
+            } catch (e) {
+                alert('启动失败: ' + e.message);
+                document.getElementById('btnStart').disabled = false;
+                document.getElementById('btnStart').textContent = '▶ 启动交易';
+            }
+        }
+
+        async function stopTrading() {
+            if (!confirm('确认停止交易引擎？')) return;
+            try {
+                document.getElementById('btnStop').disabled = true;
+                document.getElementById('btnStop').textContent = '⏳ 停止中...';
+                const resp = await fetch('/api/stop', { method: 'POST' });
+                const result = await resp.json();
+                if (!resp.ok) {
+                    alert('停止失败: ' + (result.detail || JSON.stringify(result)));
+                }
+                setRunningState(false);
+            } catch (e) {
+                alert('停止失败: ' + e.message);
+                document.getElementById('btnStop').disabled = false;
+                document.getElementById('btnStop').textContent = '■ 停止交易';
+            }
+        }
+
+        function setRunningState(running) {
+            isRunning = running;
+            document.getElementById('btnStart').disabled = running;
+            document.getElementById('btnStart').textContent = running ? '▶ 运行中' : '▶ 启动交易';
+            document.getElementById('btnStop').disabled = !running;
+            document.getElementById('btnStop').textContent = running ? '■ 停止交易' : '■ 已停止';
+
+            const badge = document.getElementById('globalStatus');
+            const text = document.getElementById('globalStatusText');
+            if (running) {
+                badge.className = 'status-badge running';
+                text.textContent = '运行中';
+            } else {
+                badge.className = 'status-badge stopped';
+                text.textContent = '未启动';
+            }
+        }
+
+        function updateDashboard(data) {
+            const p = data.portfolio || {};
+
+            const equity = p.equity || 0;
+            const pnl = p.total_pnl || 0;
+            const pnlPct = p.total_pnl_pct || 0;
+            document.getElementById('statEquity').textContent = equity.toFixed(2);
+            document.getElementById('statEquitySub').innerHTML =
+                `可用: ${(p.available_balance || 0).toFixed(2)} | 保证金: ${(p.total_margin_used || 0).toFixed(2)}`;
+
+            const pnlEl = document.getElementById('statPnl');
+            pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2);
+            pnlEl.className = 'stat-value ' + (pnl >= 0 ? 'positive' : 'negative');
+            document.getElementById('statPnlSub').innerHTML =
+                `<span class="${pnlPct >= 0 ? 'positive' : 'negative'}">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%</span>`;
+
+            document.getElementById('statTrades').textContent = data.trade_count || 0;
+            document.getElementById('statTradesSub').innerHTML =
+                `胜: ${data.win_count || 0} | 负: ${data.loss_count || 0} | 平仓: ${data.total_closed || 0}`;
+
+            const wr = (data.win_rate || 0) * 100;
+            const wrEl = document.getElementById('statWinRate');
+            wrEl.textContent = wr.toFixed(1) + '%';
+            wrEl.className = 'stat-value ' + (wr >= 50 ? 'positive' : wr > 0 ? 'negative' : '');
+            document.getElementById('statWinRateSub').innerHTML =
+                `${data.win_count || 0}W / ${data.loss_count || 0}L`;
+
+            const ct = (data.confidence_threshold || 0) * 100;
+            document.getElementById('statConfidence').textContent = ct.toFixed(0) + '%';
+            document.getElementById('confidenceFill').style.width = ct + '%';
+            document.getElementById('confidenceFill').style.background =
+                ct >= 70 ? 'var(--green)' : ct >= 50 ? 'var(--yellow)' : 'var(--red)';
+
+            const rl = data.risk_level || 'medium';
+            const rlEl = document.getElementById('statRiskLevel');
+            rlEl.textContent = { low: '低', medium: '中', high: '高', extreme: '极高' }[rl] || rl;
+            rlEl.className = 'stat-value ' + (
+                rl === 'low' ? 'positive' : rl === 'high' || rl === 'extreme' ? 'negative' : ''
+            );
+
+            document.getElementById('statPositionCount').textContent = p.position_count || 0;
+            document.getElementById('statSignalCount').textContent = data.signal_count || 0;
+
+            updatePositions(p.positions || []);
+            updatePredictions(data.predictions || {});
+
+            if (data.is_running !== undefined) {
+                setRunningState(data.is_running);
+            }
+
+            if (data.mode) {
+                const modeText = document.getElementById('globalStatusText');
+                if (data.is_running) {
+                    modeText.textContent = data.mode + ' 运行中';
+                }
+            }
+        }
+
+        function updatePositions(positions) {
+            const body = document.getElementById('positionsBody');
+            const tag = document.getElementById('positionCountTag');
+            tag.textContent = `${positions.length} 个持仓`;
+
+            if (positions.length === 0) {
+                body.innerHTML = `
+                    <div class="empty-state" style="padding:20px;">
+                        <div class="icon" style="font-size:28px;">📭</div>
+                        <p style="font-size:12px;">暂无持仓</p>
+                    </div>`;
+                return;
+            }
+
+            let html = `<table class="positions-table">
+                <thead>
+                    <tr>
+                        <th>交易对</th>
+                        <th>方向</th>
+                        <th>数量</th>
+                        <th>开仓价</th>
+                        <th>当前价</th>
+                        <th>盈亏</th>
+                        <th>杠杆</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            for (const pos of positions) {
+                const side = pos.side || pos.position_side || '';
+                const sideClass = side === 'long' ? 'side-long' : 'side-short';
+                const sideText = side === 'long' ? '做多' : '做空';
+                const pnlVal = pos.unrealized_pnl || 0;
+                const pnlClass = pnlVal >= 0 ? 'positive' : 'negative';
+                const leverage = pos.leverage || pos.metadata?.leverage || '-';
+
+                html += `<tr>
+                    <td><strong>${pos.symbol}</strong></td>
+                    <td><span class="${sideClass}">${sideText}</span></td>
+                    <td>${(pos.amount || 0).toFixed(4)}</td>
+                    <td>${(pos.entry_price || 0).toFixed(2)}</td>
+                    <td>${(pos.current_price || 0).toFixed(2)}</td>
+                    <td class="${pnlClass}">${pnlVal >= 0 ? '+' : ''}${pnlVal.toFixed(4)}</td>
+                    <td>${leverage}x</td>
+                </tr>`;
+            }
+
+            html += '</tbody></table>';
+            body.innerHTML = html;
+        }
+
+        function updatePredictions(predictions) {
+            const body = document.getElementById('predictionsBody');
+            const symbols = Object.keys(predictions);
+
+            if (symbols.length === 0) {
+                body.innerHTML = `
+                    <div class="empty-state" style="padding:20px;">
+                        <div class="icon" style="font-size:28px;">🔮</div>
+                        <p style="font-size:12px;">启动交易后显示预测</p>
+                    </div>`;
+                document.getElementById('predUpdateTime').textContent = '等待启动';
+                return;
+            }
+
+            document.getElementById('predUpdateTime').textContent =
+                new Date().toLocaleTimeString('zh-CN', { hour12: false });
+
+            let html = '<div class="prediction-grid">';
+
+            for (const symbol of symbols) {
+                const preds = predictions[symbol];
+                if (!preds || preds.length === 0) continue;
+
+                const shortSymbol = symbol.replace('/USDT:USDT', '').replace('/USDT', '');
+                html += `<div class="prediction-symbol-group">`;
+                html += `<div class="prediction-symbol-title">${shortSymbol}</div>`;
+
+                for (const pred of preds) {
+                    const dir = (pred.prediction || 'HOLD').toLowerCase();
+                    const dirText = { buy: '▲ 上涨', sell: '▼ 下跌', hold: '● 持平', error: '✕ 错误' }[dir] || '● 持平';
+                    const dirClass = dir === 'buy' ? 'buy' : dir === 'sell' ? 'sell' : 'hold';
+                    const confidence = (pred.confidence || 0) * 100;
+                    const barWidth = Math.max(confidence, 2);
+                    const detail = pred.detail || '';
+
+                    html += `<div class="prediction-row" ${detail ? `title="${detail}"` : ''}>
+                        <span class="prediction-tf">${pred.label || pred.timeframe}</span>
+                        <div class="prediction-bar-wrap">
+                            <div class="prediction-bar ${dirClass}" style="width:${barWidth}%"></div>
+                        </div>
+                        <span class="prediction-direction ${dirClass}">${dirText}</span>
+                        <span class="prediction-confidence">${confidence.toFixed(1)}%</span>
+                    </div>`;
+                }
+
+                html += '</div>';
+            }
+
+            html += '</div>';
+            body.innerHTML = html;
+        }
+
+        async function updateModelStatus() {
+            try {
+                const resp = await fetch('/api/model_status');
+                const data = await resp.json();
+                const tag = document.getElementById('modelStatusTag');
+                if (data.loaded) {
+                    tag.textContent = '模型已就绪';
+                    tag.style.background = 'var(--green-bg)';
+                    tag.style.color = 'var(--green)';
+                } else {
+                    tag.textContent = data.detail || '模型未加载';
+                    tag.style.background = 'var(--red-bg)';
+                    tag.style.color = 'var(--red)';
+                }
+            } catch (e) {
+                console.error('Model status error:', e);
+            }
+        }
+
+        function updateLogs(logs) {
+            const container = document.getElementById('logContainer');
+            if (!logs || logs.length === 0) return;
+
+            let html = '';
+            for (const line of logs) {
+                let levelClass = 'level-info';
+                if (line.includes('WARNING')) levelClass = 'level-warning';
+                else if (line.includes('ERROR')) levelClass = 'level-error';
+                else if (line.includes('CRITICAL')) levelClass = 'level-error';
+
+                const parts = line.split(' - ');
+                let timeStr = '';
+                let rest = line;
+                if (parts.length >= 2) {
+                    timeStr = parts[0];
+                    rest = parts.slice(1).join(' - ');
+                }
+
+                html += `<div class="log-line"><span class="time">${timeStr}</span> <span class="${levelClass}">${rest}</span></div>`;
+            }
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function connectWS() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${location.host}/ws`);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                if (reconnectTimer) {
+                    clearInterval(reconnectTimer);
+                    reconnectTimer = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    updateDashboard(data);
+                    if (data.logs) {
+                        updateLogs(data.logs);
+                    }
+                } catch (e) {
+                    console.error('WS parse error:', e);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket closed, reconnecting...');
+                if (!reconnectTimer) {
+                    reconnectTimer = setInterval(() => {
+                        connectWS();
+                    }, 3000);
+                }
+            };
+
+            ws.onerror = (err) => {
+                console.error('WebSocket error:', err);
+                ws.close();
+            };
+        }
+
+        async function fetchStatus() {
+            try {
+                const resp = await fetch('/api/status');
+                const data = await resp.json();
+                updateDashboard(data);
+                if (data.logs) {
+                    updateLogs(data.logs);
+                }
+            } catch (e) {
+                console.error('Status fetch error:', e);
+            }
+        }
+
+        async function loadConfig() {
+            try {
+                const resp = await fetch('/api/config');
+                const cfg = await resp.json();
+                if (cfg.exchange) {
+                    document.getElementById('exchangeName').value = cfg.exchange.name || 'binance';
+                    if (cfg.exchange.api_key) document.getElementById('apiKey').value = cfg.exchange.api_key;
+                    if (cfg.exchange.api_secret) document.getElementById('apiSecret').value = cfg.exchange.api_secret;
+                    document.getElementById('testnet').value = cfg.exchange.testnet ? 'true' : 'false';
+                    document.getElementById('leverage').value = cfg.exchange.leverage || 10;
+                    if (cfg.exchange.proxy) document.getElementById('proxy').value = cfg.exchange.proxy;
+                    if (cfg.exchange.demo_api) document.getElementById('demoApi').value = cfg.exchange.demo_api;
+                }
+                if (cfg.strategy) {
+                    document.getElementById('strategyName').value = cfg.strategy.name || 'ai';
+                    document.getElementById('confidenceThreshold').value = cfg.strategy.confidence_threshold || 0.65;
+                    document.getElementById('maxPositionSize').value = cfg.strategy.max_position_size || 0.1;
+                    document.getElementById('lookbackPeriod').value = cfg.strategy.lookback_period || 500;
+                }
+                if (cfg.risk) {
+                    document.getElementById('maxDrawdown').value = cfg.risk.max_drawdown || 0.15;
+                    document.getElementById('dailyLossLimit').value = cfg.risk.daily_loss_limit || 0.05;
+                    document.getElementById('maxOpenPositions').value = cfg.risk.max_open_positions || 3;
+                    document.getElementById('stopLossPct').value = cfg.risk.stop_loss_pct || 0.0015;
+                    document.getElementById('takeProfitPct').value = cfg.risk.take_profit_pct || 0.003;
+                }
+                if (cfg.data) {
+                    document.getElementById('historicalDays').value = cfg.data.historical_days || 30;
+                    document.getElementById('updateInterval').value = cfg.data.update_interval || 60;
+                }
+                if (cfg.symbols) {
+                    document.getElementById('symbols').value = cfg.symbols.join(',');
+                }
+                if (cfg.mode) {
+                    setMode(cfg.mode === 'paper' ? 'paper' : 'live');
+                }
+            } catch (e) {
+                console.error('Config load error:', e);
+            }
+        }
+
+        connectWS();
+        fetchStatus();
+        loadConfig();
+        updateModelStatus();
+    </script>
+</body>
+</html>
